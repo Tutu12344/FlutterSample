@@ -9,8 +9,13 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -65,47 +70,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String lastWords = "";
-  String lastError = "";
-  String lastStatus = "";
-  stt.SpeechToText speech = stt.SpeechToText();
-
-  //音声入力開始
-  Future<void> _speak() async {
-    bool available = await speech.initialize(
-        onError: errorListener, onStatus: statusListener);
-    if (available) {
-      speech.listen(onResult: resultListener);
-    } else {
-      print("The user has denied the use of speech recognition.");
-    }
-  }
-
-  //音声入力停止
-  Future<void> _stop() async {
-    speech.stop();
-  }
-
-  //リザルトリスナー
-  void resultListener(SpeechRecognitionResult result) {
-    setState(() {
-      lastWords = result.recognizedWords;
-    });
-  }
-
-  // エラーリスナー
-  void errorListener(SpeechRecognitionError error) {
-    setState(() {
-      lastError = '${error.errorMsg} - ${error.permanent}';
-    });
-  }
-
-  // ステータスリスナー
-  void statusListener(String status) {
-    setState(() {
-      lastStatus = status;
-    });
-  }
+  //入力したメールアドレス/パスワード
+  String _email = "";
+  String _password = "";
 
   @override
   Widget build(BuildContext context) {
@@ -116,24 +83,81 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
+        appBar: AppBar(
+          title: Text(widget.title),
+        ),
+        body: Center(
+            child: Container(
+          padding: const EdgeInsets.all(24),
           child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-            Text('変換文字:$lastWords',
-                style: Theme.of(context).textTheme.headline6),
-            Text('ステータス:$lastStatus',
-                style: Theme.of(context).textTheme.headline6),
-          ])),
-      floatingActionButton:
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-        FloatingActionButton(
-            onPressed: _speak, child: const Icon(Icons.play_arrow)),
-        FloatingActionButton(onPressed: _stop, child: const Icon(Icons.stop))
-      ]),
-    );
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              //一行目 メールアドレス入力用テキストフィールド
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'メールアドレス'),
+                onChanged: (String value) {
+                  setState(() {
+                    _email = value;
+                  });
+                },
+              ),
+              //2行目　パスワード入力用テキストフィールド
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'パスワード'),
+                obscureText: true,
+                onChanged: (String value) {
+                  setState(() {
+                    _password = value;
+                  });
+                },
+              ),
+              //3行目　ユーザ登録ボタン
+              ElevatedButton(
+                child: const Text("ユーザ登録"),
+                onPressed: () async {
+                  try {
+                    final User? user = (await FirebaseAuth.instance
+                            .createUserWithEmailAndPassword(
+                                email: _email, password: _password))
+                        .user;
+                    if (user != null)
+                      print("ユーザ登録しました${user.email},${user.uid}");
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+              ),
+              //4行目　ログインボタン
+              ElevatedButton(
+                child: const Text("ログイン"),
+                onPressed: () async {
+                  try {
+                    final User? user = (await FirebaseAuth.instance
+                            .signInWithEmailAndPassword(
+                                email: _email, password: _password))
+                        .user;
+                    if (user != null)
+                      print("ログインしました${user.email},${user.uid}");
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+              ),
+              //5行目　パスワードリセットボタン
+              ElevatedButton(
+                child: const Text("パスワードリセット"),
+                onPressed: () async {
+                  try {
+                    await FirebaseAuth.instance
+                        .sendPasswordResetEmail(email: _email);
+                    print("パスワードリセット用のメールを送信しました");
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+              ),
+            ],
+          ),
+        )));
   }
 }
