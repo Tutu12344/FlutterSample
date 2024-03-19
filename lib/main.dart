@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 void main() {
   runApp(const MyApp());
@@ -62,22 +65,46 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  FlutterTts flutterTts = FlutterTts();
-  final String _speakText =
-      "寿限無 寿限無 五劫の擦り切れ 海砂利水魚の 水行末 雲来末 風来末 食う寝る処に住む処 藪ら柑子の藪柑子 パイポパイポ パイポのシューリンガン シューリンガンのグーリンダイ グーリンダイのポンポコピーのポンポコナーの 長久命の長助";
+  String lastWords = "";
+  String lastError = "";
+  String lastStatus = "";
+  stt.SpeechToText speech = stt.SpeechToText();
 
-  //読み上げ用
+  //音声入力開始
   Future<void> _speak() async {
-    await flutterTts.setLanguage("ja-JP"); //言語
-    await flutterTts.setSpeechRate(1.0); //速度
-    await flutterTts.setVolume(1.0); //音量
-    await flutterTts.setPitch(1.0); //ビッチ
-    await flutterTts.speak(_speakText); //読み上げ
+    bool available = await speech.initialize(
+        onError: errorListener, onStatus: statusListener);
+    if (available) {
+      speech.listen(onResult: resultListener);
+    } else {
+      print("The user has denied the use of speech recognition.");
+    }
   }
 
-  //停止用
+  //音声入力停止
   Future<void> _stop() async {
-    await flutterTts.stop();
+    speech.stop();
+  }
+
+  //リザルトリスナー
+  void resultListener(SpeechRecognitionResult result) {
+    setState(() {
+      lastWords = result.recognizedWords;
+    });
+  }
+
+  // エラーリスナー
+  void errorListener(SpeechRecognitionError error) {
+    setState(() {
+      lastError = '${error.errorMsg} - ${error.permanent}';
+    });
+  }
+
+  // ステータスリスナー
+  void statusListener(String status) {
+    setState(() {
+      lastStatus = status;
+    });
   }
 
   @override
@@ -96,7 +123,10 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-            Text(_speakText, style: Theme.of(context).textTheme.headline6),
+            Text('変換文字:$lastWords',
+                style: Theme.of(context).textTheme.headline6),
+            Text('ステータス:$lastStatus',
+                style: Theme.of(context).textTheme.headline6),
           ])),
       floatingActionButton:
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
