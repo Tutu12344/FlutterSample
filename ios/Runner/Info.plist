@@ -51,5 +51,9 @@
 	<string>カメラを利用する理由を記載</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>マイクを利用する理由を記載</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ロケーション情報を利用する理由を記載</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>ロケーション情報を利用する理由を記載</string>
 </dict>
 </plist>
