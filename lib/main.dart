@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 void main() {
   runApp(const MyApp());
@@ -60,38 +61,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _latitude = "NoData";
-  String _longitude = "NoData";
-  String _altitude = "NoData";
-  String _distanceInMeters = "NoData";
-  String _bearing = "NoData";
-
-  Future<void> getLocation() async {
-    //権限を取得
-    LocationPermission permission = await Geolocator.requestPermission();
-    //権限がない場合は戻る
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      return;
-    }
-    //位置情報を取得
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-    setState(() {
-      //北緯がプラス,南緯がマイナス
-      _latitude = "緯度:${position.latitude.toStringAsFixed(2)}";
-      // 東経がプラス、西経がマイナス
-      _longitude = "経度: ${position.longitude.toStringAsFixed(2)}";
-      // 高度
-      _altitude = "高度: ${position.altitude.toStringAsFixed(2)}";
-      // 距離を1000で割ってkmで返す(サンパウロとの距離)
-      _distanceInMeters =
-          "距離:${(Geolocator.distanceBetween(position.latitude, position.longitude, -23.61, -46.40) / 1000).toStringAsFixed(2)}";
-      //方位を返す（サンパウロとの方位)
-      _bearing =
-          "方位: ${(Geolocator.bearingBetween(position.latitude, position.longitude, -23.61, -46.40)).toStringAsFixed(2)}";
-    });
-  }
+  String _userAccelerometerValues = "";
+  String _gyroscopeValues = "";
 
   @override
   Widget build(BuildContext context) {
@@ -102,26 +73,34 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(_latitude, style: Theme.of(context).textTheme.headline4),
-            Text(_longitude, style: Theme.of(context).textTheme.headline4),
-            Text(_altitude, style: Theme.of(context).textTheme.headline4),
-            Text(_distanceInMeters,
-                style: Theme.of(context).textTheme.headline4),
-            Text(_bearing, style: Theme.of(context).textTheme.headline4),
-          ],
+        appBar: AppBar(
+          title: Text(widget.title),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: getLocation,
-        child: const Icon(Icons.location_on),
-      ),
-    );
+        body: Center(
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+              Text(_userAccelerometerValues,
+                  style: Theme.of(context).textTheme.headline6),
+              Text(_gyroscopeValues,
+                  style: Theme.of(context).textTheme.headline6),
+            ])));
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    userAccelerometerEvents.listen((event) {
+      setState(() {
+        _userAccelerometerValues =
+            "加速度センサー\n${event.x}\n${event.y}\n${event.z}";
+      });
+    });
+    gyroscopeEvents.listen((event) {
+      setState(() {
+        _gyroscopeValues = "ジャイロセンサー\n${event.x}\n${event.y}\n${event.z}";
+      });
+    });
   }
 }
