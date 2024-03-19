@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 void main() {
   runApp(const MyApp());
@@ -61,8 +62,23 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _userAccelerometerValues = "";
-  String _gyroscopeValues = "";
+  FlutterTts flutterTts = FlutterTts();
+  final String _speakText =
+      "寿限無 寿限無 五劫の擦り切れ 海砂利水魚の 水行末 雲来末 風来末 食う寝る処に住む処 藪ら柑子の藪柑子 パイポパイポ パイポのシューリンガン シューリンガンのグーリンダイ グーリンダイのポンポコピーのポンポコナーの 長久命の長助";
+
+  //読み上げ用
+  Future<void> _speak() async {
+    await flutterTts.setLanguage("ja-JP"); //言語
+    await flutterTts.setSpeechRate(1.0); //速度
+    await flutterTts.setVolume(1.0); //音量
+    await flutterTts.setPitch(1.0); //ビッチ
+    await flutterTts.speak(_speakText); //読み上げ
+  }
+
+  //停止用
+  Future<void> _stop() async {
+    await flutterTts.stop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,34 +89,21 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
-        body: Center(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-              Text(_userAccelerometerValues,
-                  style: Theme.of(context).textTheme.headline6),
-              Text(_gyroscopeValues,
-                  style: Theme.of(context).textTheme.headline6),
-            ])));
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    userAccelerometerEvents.listen((event) {
-      setState(() {
-        _userAccelerometerValues =
-            "加速度センサー\n${event.x}\n${event.y}\n${event.z}";
-      });
-    });
-    gyroscopeEvents.listen((event) {
-      setState(() {
-        _gyroscopeValues = "ジャイロセンサー\n${event.x}\n${event.y}\n${event.z}";
-      });
-    });
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+            Text(_speakText, style: Theme.of(context).textTheme.headline6),
+          ])),
+      floatingActionButton:
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+        FloatingActionButton(
+            onPressed: _speak, child: const Icon(Icons.play_arrow)),
+        FloatingActionButton(onPressed: _stop, child: const Icon(Icons.stop))
+      ]),
+    );
   }
 }
