@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'test_page1.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -57,16 +58,25 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  String _type = "偶数";
+  XFile? _image;
+  final imagePicker = ImagePicker();
 
-  void _incrementCounter() {
+  //カメラから写真を取得するメソッド
+  Future getImageFromCamera() async {
+    final pickedFile = await imagePicker.pickImage(source: ImageSource.camera);
     setState(() {
-      _counter++;
-      if (_counter % 2 == 0) {
-        _type = "偶数";
-      } else {
-        _type = "奇数";
+      if (pickedFile != null) {
+        _image = XFile(pickedFile.path);
+      }
+    });
+  }
+
+  //ギャラリーから写真を取得するメソッド
+  Future getImageFromGarally() async {
+    final pickedFile = await imagePicker.pickImage(source: ImageSource.gallery);
+    setState(() {
+      if (pickedFile != null) {
+        _image = XFile(pickedFile.path);
       }
     });
   }
@@ -80,7 +90,32 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      body: TestPage1(),
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+          //取得した写真を表示(ない場合はメッセージ)
+          child: _image == null
+              ? Text(
+                  "写真を選択してください",
+                  style: Theme.of(context).textTheme.headline4,
+                )
+              : Image.file(File(_image!.path))),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          //カメラから取得するボタン
+          FloatingActionButton(
+            onPressed: getImageFromCamera,
+            child: const Icon(Icons.photo_camera),
+          ),
+          //ギャラリーから取得するボタン
+          FloatingActionButton(
+            onPressed: getImageFromGarally,
+            child: const Icon(Icons.photo_album),
+          )
+        ],
+      ),
     );
   }
 }
