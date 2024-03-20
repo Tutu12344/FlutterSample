@@ -59,5 +59,7 @@
 	<string>音声認識を利用する理由を記載</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>マイクを利用する理由を記載</string>
+	<key>GADApplicationIdentifier</key>
+ 	<string>ca-app-pub-3940256099942544~1458002511</string>
 </dict>
 </plist>
