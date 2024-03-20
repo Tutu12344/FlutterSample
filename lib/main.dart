@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,6 +75,55 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  Image? _img;
+  Text? _text;
+
+  //ダウンロード処理
+  Future<void> _download() async {
+    //ファイルのダウンロード
+    FirebaseStorage storage = FirebaseStorage.instance;
+    Reference imageRef = storage.ref().child("DL").child("flutter.png");
+    String imageUrl = await imageRef.getDownloadURL();
+    Reference textRef = storage.ref("DL/hello.txt");
+    var data = await textRef.getData();
+
+    //画面に反映
+    setState(() {
+      _img = Image.network(imageUrl);
+      _text = Text(ascii.decode(data!));
+    });
+
+    //画像ファイルはローカルにも保存
+    Directory appDocDir = await getApplicationDocumentsDirectory();
+    File downloadToFile = File("${appDocDir.path}/download-logo.png");
+    try {
+      await imageRef.writeToFile(downloadToFile);
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  //アップロード処理
+  void _upload() async {
+    //imagePickerで画像を選択する
+    final pickerFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickerFile == null) {
+      return;
+    }
+    File file = File(pickerFile.path);
+    FirebaseStorage storage = FirebaseStorage.instance;
+    try {
+      await storage.ref("UL/upload-pic.png").putFile(file);
+      setState(() {
+        _img = null;
+        _text = const Text("uploadDone");
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -81,24 +133,31 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
-        body: Center(
-          child: TextButton(
-            //ボタンを押したときのイベント
-            onPressed: () {
-              //データの取得
-              FirebaseFirestore.instance
-                  .collection('flutterDataCollection')
-                  .doc("flutterDataDocument")
-                  .delete();
-            },
-            child: const Text(
-              "実行",
-              style: TextStyle(fontSize: 50),
-            ),
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        //ダウンロードしたイメージとテキストを表示
+        children: <Widget>[
+          if (_img != null) _img!,
+          if (_text != null) _text!,
+        ],
+      )),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          FloatingActionButton(
+            onPressed: _download,
+            child: const Icon(Icons.download_outlined),
           ),
-        ));
+          FloatingActionButton(
+            onPressed: _upload,
+            child: const Icon(Icons.upload_outlined),
+          )
+        ],
+      ),
+    );
   }
 }
