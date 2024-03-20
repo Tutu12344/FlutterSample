@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -21,12 +22,21 @@ import 'package:path_provider/path_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  runApp(const MyApp());
+  //runZonedGuardで新しいゾーンを定義
+  await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+    //Flutterでキャッチされた例外
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+    runApp(const MyApp());
+  }, (error, stackTrace) {
+    //Flutterでキャッチされなかった例外
+    FirebaseCrashlytics.instance.recordError(error, stackTrace);
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -80,26 +90,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static FirebaseInAppMessaging flam = FirebaseInAppMessaging.instance;
-  String _installId = "";
-
-  @override
-  void initState() {
-    super.initState();
-
-    //「update_event」というイベントをトリガーする
-    flam.triggerEvent('update_event');
-    FirebaseMessaging.instance.getToken().then((String? token) {
-      //tokenのXXXX:YYYYのXXXXの部分がインストールID
-      String installId = token!.split(":")[0];
-      setState(() {
-        _installId = installId;
-      });
-      //コピーしやすいようにターミナルに出すためにprint
-      print(installId);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -113,7 +103,26 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
         ),
         body: Center(
-          child: Text(_installId),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              //例外を発生させるボタン
+              ElevatedButton(
+                  onPressed: () {
+                    FirebaseCrashlytics.instance.log("ExceptionLog");
+                    throw Exception("MyException");
+                  },
+                  child: const Text("throw Error")),
+
+              //アプリをクラッシュさせるボタン
+              ElevatedButton(
+                  onPressed: () {
+                    FirebaseCrashlytics.instance.log("CrashLog");
+                    FirebaseCrashlytics.instance.crash();
+                  },
+                  child: const Text("Crash")),
+            ],
+          ),
         ));
   }
 }
