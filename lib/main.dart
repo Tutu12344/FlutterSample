@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,34 +20,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-//通知インスタンスの生成
-final FlutterLocalNotificationsPlugin flnp = FlutterLocalNotificationsPlugin();
-
-// バックグラウンドでメッセージを受け取った時のイベント(トップレベルに定義)
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  RemoteNotification? notification = message.notification;
-  flnp.initialize(const InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher')));
-
-  if (notification == null) {
-    return;
-  }
-
-  //通知
-  flnp.show(
-      notification.hashCode,
-      "${notification.title}:バックグラウンド",
-      notification.body,
-      const NotificationDetails(
-          android: AndroidNotificationDetails('channel_id', 'channel_name')));
-}
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  //バッググランドでのメッセージ受信イベントを設定
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   runApp(const MyApp());
 }
@@ -102,39 +80,23 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _token = "";
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  static FirebaseInAppMessaging flam = FirebaseInAppMessaging.instance;
+  String _installId = "";
 
   @override
   void initState() {
     super.initState();
 
-    //アプリ初期化時に画面にtokenを表示
-    _firebaseMessaging.getToken().then((String? token) {
+    //「update_event」というイベントをトリガーする
+    flam.triggerEvent('update_event');
+    FirebaseMessaging.instance.getToken().then((String? token) {
+      //tokenのXXXX:YYYYのXXXXの部分がインストールID
+      String installId = token!.split(":")[0];
       setState(() {
-        _token = token!;
+        _installId = installId;
       });
-      //コピーしやすいようにターミナルに表示
-      print(_token);
-    });
-
-    //フォアグラウンドでメッセージを受け取った時のイベント
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      RemoteNotification? notification = message.notification;
-      flnp.initialize(const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher')));
-      if (notification == null) {
-        return;
-      }
-
-      //通知
-      flnp.show(
-          notification.hashCode,
-          "${notification.title}:フォアグラウンド",
-          notification.body,
-          const NotificationDetails(
-              android:
-                  AndroidNotificationDetails('channel_id', 'channel_name')));
+      //コピーしやすいようにターミナルに出すためにprint
+      print(installId);
     });
   }
 
@@ -151,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
         ),
         body: Center(
-          child: Text(_token),
+          child: Text(_installId),
         ));
   }
 }
