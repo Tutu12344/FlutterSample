@@ -12,6 +12,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,9 +71,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  //入力したメールアドレス/パスワード
-  String _email = "";
-  String _password = "";
+  //Googleアカウントの表示名
+  String _displayName = "";
+
+  static final googleLogin = GoogleSignIn(scopes: [
+    'email',
+    'https://www.googleapis.com/auth/contacts.readonly',
+  ]);
 
   @override
   Widget build(BuildContext context) {
@@ -87,77 +92,42 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
         ),
         body: Center(
-            child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              //一行目 メールアドレス入力用テキストフィールド
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'メールアドレス'),
-                onChanged: (String value) {
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text(
+              "Hello $_displayName",
+              style: const TextStyle(fontSize: 50),
+            ),
+            TextButton(
+              //ボタンを押したときのイベント
+              onPressed: () async {
+                //Google認証
+                GoogleSignInAccount? signinAccount = await googleLogin.signIn();
+                if (signinAccount == null) return;
+                GoogleSignInAuthentication auth =
+                    await signinAccount.authentication;
+                final OAuthCredential credential =
+                    GoogleAuthProvider.credential(
+                  idToken: auth.idToken,
+                  accessToken: auth.accessToken,
+                );
+                //認証情報をFirebaseに登録
+                User? user = (await FirebaseAuth.instance
+                        .signInWithCredential(credential))
+                    .user;
+                if (user != null) {
                   setState(() {
-                    _email = value;
+                    //画面を更新
+                    _displayName = user.displayName!;
+                    print(user.displayName);
                   });
-                },
+                }
+              },
+              child: const Text(
+                "login",
+                style: TextStyle(fontSize: 50),
               ),
-              //2行目　パスワード入力用テキストフィールド
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'パスワード'),
-                obscureText: true,
-                onChanged: (String value) {
-                  setState(() {
-                    _password = value;
-                  });
-                },
-              ),
-              //3行目　ユーザ登録ボタン
-              ElevatedButton(
-                child: const Text("ユーザ登録"),
-                onPressed: () async {
-                  try {
-                    final User? user = (await FirebaseAuth.instance
-                            .createUserWithEmailAndPassword(
-                                email: _email, password: _password))
-                        .user;
-                    if (user != null)
-                      print("ユーザ登録しました${user.email},${user.uid}");
-                  } catch (e) {
-                    print(e);
-                  }
-                },
-              ),
-              //4行目　ログインボタン
-              ElevatedButton(
-                child: const Text("ログイン"),
-                onPressed: () async {
-                  try {
-                    final User? user = (await FirebaseAuth.instance
-                            .signInWithEmailAndPassword(
-                                email: _email, password: _password))
-                        .user;
-                    if (user != null)
-                      print("ログインしました${user.email},${user.uid}");
-                  } catch (e) {
-                    print(e);
-                  }
-                },
-              ),
-              //5行目　パスワードリセットボタン
-              ElevatedButton(
-                child: const Text("パスワードリセット"),
-                onPressed: () async {
-                  try {
-                    await FirebaseAuth.instance
-                        .sendPasswordResetEmail(email: _email);
-                    print("パスワードリセット用のメールを送信しました");
-                  } catch (e) {
-                    print(e);
-                  }
-                },
-              ),
-            ],
-          ),
-        )));
+            ),
+          ]),
+        ));
   }
 }
