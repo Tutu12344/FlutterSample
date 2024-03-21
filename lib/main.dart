@@ -1,44 +1,60 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'dart:async';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // ローカライゼーション
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      // サポート言語
-      supportedLocales: const [
-        Locale('ja', ''), //日本語
-        Locale('en', ''), //英語
-      ],
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
   final String title;
+
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  int _counter = 0;
+  // Stream
+  final _counterStream = StreamController<int>();
+
+  // 初期化時にConsumerのコンストラクタにStreamを渡す
+  @override
+  void initState() {
+    super.initState();
+    Consumer(_counterStream);
+  }
+
+  // 終了時にStreamを解放する
+  @override
+  void dispose() {
+    super.dispose();
+    _counterStream.close();
+  }
+
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+    // カウントアップした後に、Streamにカウンタ値を流す
+    _counterStream.sink.add(_counter);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,19 +65,32 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // 言語設定に合わせた文字の取得
-            Text(
-              AppLocalizations.of(context)!.hello("kazutxt"),
+            const Text(
+              'You have pushed the button this many times:',
             ),
             Text(
-              AppLocalizations.of(context)!.allow,
-            ),
-            Text(
-              AppLocalizations.of(context)!.deny,
+              '$_counter',
+              style: Theme.of(context).textTheme.headline4,
             ),
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ),
     );
+  }
+}
+
+// Consumerクラス
+class Consumer {
+  // コンストラクタでint型のStreamを受け取る
+  Consumer(StreamController<int> consumeStream) {
+    // Streamをlistenしてデータが来たらターミナルに表示する
+    consumeStream.stream.listen((data) async {
+      print("consumerが$dataを使ったよ");
+    });
   }
 }
