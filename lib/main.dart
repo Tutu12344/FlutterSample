@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'mydata.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 
 //グローバル変数にProviderを定義する
-final _mydataProvider =
-    StateNotifierProvider<MyData, double>((ref) => MyData());
+//useStateを利用することでStateNotifierProviderやProviderScopeの記述も不要
+// final _mydataProvider =
+//     StateNotifierProvider<MyData, double>((ref) => MyData());
 
 void main() {
   //1-2 ProviderScopeを設定する
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -54,18 +56,18 @@ class MyContents extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // TODO: implement build
-    //ref.watchでプロバイダーにアクセスしスライダー値を管理
-    double slidevalue = ref.watch(_mydataProvider);
+    //useStateでスライダー値を管理
+    final slidevalue = useState<double>(0.5);
 
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Text(
-        slidevalue.toStringAsFixed(2),
+        slidevalue.value.toStringAsFixed(2),
         style: const TextStyle(fontSize: 100),
       ),
       Slider(
-          value: slidevalue,
+          value: slidevalue.value,
           onChanged: (value) {
-            ref.read(_mydataProvider.notifier).changeState(value);
+            slidevalue.value = value;
           }),
     ]);
   }
