@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'business_logic.dart';
 import 'dart:async';
 
 void main() {
@@ -29,30 +30,25 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  // Stream
-  final _counterStream = StreamController<int>();
+  /* floatingActionButton及び_incrementCounterは不要のため削除 */
+  var intStream = StreamController<int>();
+  var stringStream = StreamController<String>.broadcast();
 
-  // 初期化時にConsumerのコンストラクタにStreamを渡す
+  // 初期化時に各クラスにStreamを渡す
   @override
   void initState() {
     super.initState();
-    Consumer(_counterStream);
+    Generator(intStream);
+    Coordinator(intStream, stringStream);
+    Consumer(stringStream);
   }
 
   // 終了時にStreamを解放する
   @override
   void dispose() {
     super.dispose();
-    _counterStream.close();
-  }
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-    // カウントアップした後に、Streamにカウンタ値を流す
-    _counterStream.sink.add(_counter);
+    intStream.close();
+    stringStream.close();
   }
 
   @override
@@ -68,29 +64,19 @@ class _MyHomePageState extends State<MyHomePage> {
             const Text(
               'You have pushed the button this many times:',
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            StreamBuilder<String>(
+              stream: stringStream.stream,
+              initialData: "",
+              builder: (context, snapshot) {
+                return Text(
+                  '${snapshot.data}',
+                  style: Theme.of(context).textTheme.headline4,
+                );
+              },
+            )
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
     );
-  }
-}
-
-// Consumerクラス
-class Consumer {
-  // コンストラクタでint型のStreamを受け取る
-  Consumer(StreamController<int> consumeStream) {
-    // Streamをlistenしてデータが来たらターミナルに表示する
-    consumeStream.stream.listen((data) async {
-      print("consumerが$dataを使ったよ");
-    });
   }
 }
