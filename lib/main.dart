@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'business_logic.dart';
-import 'dart:async';
+import 'package:provider/provider.dart';
+import 'mywidget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,25 +30,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  /* floatingActionButton及び_incrementCounterは不要のため削除 */
-  var intStream = StreamController<int>();
-  var stringStream = StreamController<String>.broadcast();
+  int _counter = 0;
 
-  // 初期化時に各クラスにStreamを渡す
-  @override
-  void initState() {
-    super.initState();
-    Generator(intStream);
-    Coordinator(intStream, stringStream);
-    Consumer(stringStream);
-  }
-
-  // 終了時にStreamを解放する
-  @override
-  void dispose() {
-    super.dispose();
-    intStream.close();
-    stringStream.close();
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+    print("count:${_counter.toString()}");
   }
 
   @override
@@ -57,25 +45,16 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            StreamBuilder<String>(
-              stream: stringStream.stream,
-              initialData: "",
-              builder: (context, snapshot) {
-                return Text(
-                  '${snapshot.data}',
-                  style: Theme.of(context).textTheme.headline4,
-                );
-              },
-            )
-          ],
-        ),
+      //使用する箇所の上位にProviderを入れる
+      body: Provider<int>.value(
+          value: _counter,
+          child: const Center(
+            child: MyWidget(),
+          )),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
       ),
     );
   }
