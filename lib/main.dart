@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'mydata.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 //グローバル変数にProviderを定義する
 final _mydataProvider =
@@ -39,32 +40,33 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.title),
-          ),
-          body: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              //Text用にConsumerを使う
-              Consumer(
-                builder: (context, ref, child) {
-                  return Text(
-                    //refを用いてstateの値を取り出す
-                    ref.watch(_mydataProvider).toStringAsFixed(2),
-                    style: const TextStyle(fontSize:100),
-                  );
-                }
-              ),
-              // Slider用にConsumerを使う
-              Consumer(builder: (context,ref,child){
-                return Slider(
-                  //refを用いてstateの値を取り出す
-                  value: ref.watch(_mydataProvider),
-                  //ChangeStateで状態を変える
-                   onChanged: (value) => ref.read(_mydataProvider.notifier).changeState(value));
-              })
-            ],
-          )),
-    );
+        appBar: AppBar(
+          title: Text(widget.title),
+        ),
+        body: const MyContents());
+  }
+}
+
+//HooksConsumerWidgetを継承するために切り出し
+class MyContents extends HookConsumerWidget {
+  const MyContents({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // TODO: implement build
+    //ref.watchでプロバイダーにアクセスしスライダー値を管理
+    double slidevalue = ref.watch(_mydataProvider);
+
+    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Text(
+        slidevalue.toStringAsFixed(2),
+        style: const TextStyle(fontSize: 100),
+      ),
+      Slider(
+          value: slidevalue,
+          onChanged: (value) {
+            ref.read(_mydataProvider.notifier).changeState(value);
+          }),
+    ]);
   }
 }
