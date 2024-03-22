@@ -1,74 +1,30 @@
-import 'package:flutter/material.dart';
-import 'mydata.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-
-//グローバル変数にProviderを定義する
-//useStateを利用することでStateNotifierProviderやProviderScopeの記述も不要
-// final _mydataProvider =
-//     StateNotifierProvider<MyData, double>((ref) => MyData());
+import 'user.dart';
 
 void main() {
-  //1-2 ProviderScopeを設定する
-  runApp(const MyApp());
-}
+  //ユーザを3つ作成する user1と3は同じ
+  User user1 = User('kazutxt', 30);
+  User user2 = User('FakeName', 30);
+  User user3 = User('kazutxt', 30);
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  //表示(toString)のテスト
+  print("toStringのテスト");
+  print(user1);
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+  //比較(==)のテスト
+  print("比較のテスト");
+  if (user1 == user2) print("user1とuser2は同じ人");
+  if (user1 == user3) print("user1とuser3は同じ人");
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  // コピーをして新しいインスタンスを作るテスト
+  print("コピーのテスト");
+  User user4 = user1.copyWith(name: "unknown"); //ageはuser1のまま
+  print(user4);
 
-  final String title;
+  // 代入そのものはOK
+  print("代入のテスト");
+  user2 = user3;
+  print(user2); // user3の情報が表示される
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
-        body: const MyContents());
-  }
-}
-
-//HooksConsumerWidgetを継承するために切り出し
-class MyContents extends HookConsumerWidget {
-  const MyContents({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: implement build
-    //useStateでスライダー値を管理
-    final slidevalue = useState<double>(0.5);
-
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(
-        slidevalue.value.toStringAsFixed(2),
-        style: const TextStyle(fontSize: 100),
-      ),
-      Slider(
-          value: slidevalue.value,
-          onChanged: (value) {
-            slidevalue.value = value;
-          }),
-    ]);
-  }
+  // Immutableを破壊するので、以下のような使い方はNG
+  // user1.name = "unknown";
 }
