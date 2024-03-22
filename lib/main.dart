@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'mydata.dart';
-import 'myslider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+//グローバル変数にProviderを定義する
+final _mydataProvider =
+    StateNotifierProvider<MyData, double>((ref) => MyData());
 
 void main() {
-  runApp(const MyApp());
+  //1-2 ProviderScopeを設定する
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -34,22 +38,31 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (BuildContext context) => MyData(),
-      child: Scaffold(
+    return Scaffold(
           appBar: AppBar(
             title: Text(widget.title),
           ),
           body: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Consumer<MyData>(
-                builder: (context, mydata, _) => Text(
-                  mydata.value.toStringAsFixed(2),
-                  style: const TextStyle(fontSize: 100),
-                ),
+              //Text用にConsumerを使う
+              Consumer(
+                builder: (context, ref, child) {
+                  return Text(
+                    //refを用いてstateの値を取り出す
+                    ref.watch(_mydataProvider).toStringAsFixed(2),
+                    style: const TextStyle(fontSize:100),
+                  );
+                }
               ),
-              const MySlider(),
+              // Slider用にConsumerを使う
+              Consumer(builder: (context,ref,child){
+                return Slider(
+                  //refを用いてstateの値を取り出す
+                  value: ref.watch(_mydataProvider),
+                  //ChangeStateで状態を変える
+                   onChanged: (value) => ref.read(_mydataProvider.notifier).changeState(value));
+              })
             ],
           )),
     );
