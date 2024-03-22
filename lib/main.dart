@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'mywidget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,6 +22,7 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
+
   final String title;
 
   @override
@@ -31,7 +31,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-
   void _incrementCounter() {
     setState(() {
       _counter++;
@@ -41,16 +40,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // InheritedWidget時は、InheritedWidgetのchildがScaffold
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      //使用する箇所の上位にProviderを入れる
+      // 使用する箇所の上位にProviderを入れる
       body: Provider<int>.value(
           value: _counter,
-          child: const Center(
-            child: MyWidget(),
-          )),
+          child: Center(
+              child: Consumer<int>(
+                  builder: (context, value, _) => Text("consume:$value",
+                      style: Theme.of(context).textTheme.headline4)))),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
