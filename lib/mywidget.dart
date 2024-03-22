@@ -7,8 +7,9 @@ class MyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     // TODO: implement build
     int count = Provider.of<int>(context);
+    String message = Provider.of<String>(context);
     return Text(
-      count.toString(),
+      "$message\nCounit is $count",
       style: Theme.of(context).textTheme.headline4,
     );
   }
